@@ -1,0 +1,75 @@
+version: '2'
+services:
+
+  poc-web:
+    restart: always
+    build: .
+    env_file: .env
+    container_name: poc-web
+    command: bash -c "rm -rf celerybeat.pid && python manage.py collectstatic --no-input && python manage.py runserver 0.0.0.0:8001"
+    volumes:
+      - .:/site
+    ports:
+      - "8001:8001"
+    depends_on:
+      - postgresql-poc
+
+  postgresql-poc:
+    image: postgres:12
+    container_name: db_poc
+    env_file: .env
+    volumes:
+      - db-poc:/var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    expose:
+      - "5432"
+
+  celery-poc:
+    restart: unless-stopped
+    build: .
+    command: celery -A configs.celery worker -l info --concurrency=2
+    container_name: celery_web_fit_poc
+    env_file: .env
+    volumes:
+      - .:/site
+    links:
+      - postgresql-poc
+    depends_on:
+      - poc-web
+      - postgresql-poc
+      - redis-web-poc
+
+  celery-beat-web:
+    restart: unless-stopped
+    build: .
+    command: /bin/bash -c " rm -f /site/celerybeat.pid; celery -A configs.celery beat"
+    container_name: celery_beat_web_poc
+    env_file: .env
+    volumes:
+      - .:/site
+    depends_on:
+      - poc-web
+      - postgresql-poc
+      - redis-web-poc
+
+  flower-web-poc:
+    build: .
+    env_file: .env
+    command: /bin/bash -c "sleep 6 && celery flower -A configs.celery --port=5556 --basic_auth=admin:admin --pidfile /tmp/celery.pid"
+    container_name: flower_web_poc
+    volumes:
+      - .:/site
+    ports:
+      - "5556:5556"
+    depends_on:
+      - postgresql-poc
+      - redis-web-poc
+
+  redis-web-poc:
+    restart: always
+    image: redis:latest
+    container_name: redis_poc
+
+volumes:
+  db-poc:
