@@ -70,3 +70,57 @@ class Member(models.Model):
     class Meta:
         verbose_name = 'Участник'
         verbose_name_plural = 'Участники'
+
+
+class Check(models.Model):
+    """
+    [Check]
+    Модель счета
+    """
+    title = models.CharField(max_length=75, blank=True, null=True, verbose_name="Название")
+    organizer = models.ForeignKey(Member, on_delete=SET_NULL, null=True, verbose_name="Создатель счета")
+    active = models.BooleanField(default=True, verbose_name="Активен?")
+    created_at = models.DateTimeField(default=timezone.now, verbose_name='Дата создания')
+    closed_at = models.DateTimeField(null=True, blank=True, verbose_name='Дата закрытия')
+
+    def __str__(self) -> str:
+        return f"{self.title}"
+
+    class Meta:
+        verbose_name = 'Счет'
+        verbose_name_plural = 'Счета'
+
+
+class CheckMember(models.Model):
+    """
+    [CheckMember]
+    Модель участника счета
+    """
+    member = models.ForeignKey(Member, on_delete=SET_NULL, null=True, verbose_name="Участник")
+    check_obj = models.ForeignKey(Check, on_delete=SET_NULL, null=True, verbose_name="Счет")
+
+    def __str__(self) -> str:
+        return f"{self.member} ({self.check_obj})"
+
+    class Meta:
+        verbose_name = 'Участник счета'
+        verbose_name_plural = 'Участники счетов'
+
+
+class CheckRecord(models.Model):
+    """
+    [CheckRecord]
+    Модель траты по счету
+    """
+    member = models.ForeignKey(Member, on_delete=SET_NULL, null=True, verbose_name="Участник счета")
+    check_obj = models.ForeignKey(Check, on_delete=SET_NULL, null=True, verbose_name="Счет")
+    object = models.CharField(max_length=75, blank=True, null=True, verbose_name="Объект траты")
+    desc = models.TextField(blank=True, null=True, verbose_name="Описание траты")
+    amount = models.FloatField(default=0.0, verbose_name="Сумма")
+
+    def __str__(self) -> str:
+        return f"{self.member} -> {self.amount} ({self.object}) (Счет: {self.check_obj})"
+
+    class Meta:
+        verbose_name = 'Трата по счету'
+        verbose_name_plural = 'Траты по счетам'

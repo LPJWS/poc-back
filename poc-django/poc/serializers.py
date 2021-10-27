@@ -142,3 +142,32 @@ class MemberSerializer(BaseImageSerializer):
         model = Member
         fields = '__all__'
 
+
+class CheckSerializer(BaseImageSerializer):
+    """
+    Сериализатор для счетов
+    """
+    organizer = MemberSerializer(read_only=True)
+
+    def create(self, validated_data):
+        member = self.context.get('member')
+        check = Check.objects.create(
+            title=validated_data.get('title'),
+            organizer=member
+        )
+        check.save()
+        return check
+
+    def close(self, instance: Check):
+        member = self.context.get('member')
+        if member != instance.organizer:
+            raise ValidationError({"info": "You can't close this check"})
+        if instance.active or not instance.closed_at:
+            instance.active = False
+            instance.closed_at = timezone.now()
+            instance.save()
+        return instance
+
+    class Meta:
+        model = Check
+        fields = '__all__'

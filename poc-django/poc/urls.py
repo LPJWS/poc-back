@@ -7,6 +7,8 @@ from poc.views import *
 router = SimpleRouter()
 router.register(r'auth', AuthView, basename='auth')
 router.register(r'user', UserView, basename='user')
+router.register(r'member', MemberView, basename='member')
+router.register(r'check', CheckView, basename='check')
 
 urlpatterns = [
     # path('auth/send/', reset_password),

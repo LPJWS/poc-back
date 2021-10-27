@@ -6,7 +6,7 @@ from rest_framework import status, generics, viewsets
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
+from rest_framework.views import APIView, exception_handler
 from django.contrib.auth.password_validation import validate_password
 
 from poc.models import User
@@ -63,3 +63,82 @@ class UserView(viewsets.ViewSet):
     @action(methods=['GET'], detail=False, url_path='me', url_name='About User', permission_classes=[IsAuthenticated])
     def about_user(self, request, *args, **kwargs):
         return Response(UserDetailSerializer(instance=request.user, context={"request": request}).data, status=status.HTTP_200_OK)
+
+
+class MemberView(viewsets.ViewSet):
+    """
+    Действия с участником
+    """
+    permission_classes = (AllowAny, )
+    serializer_class = MemberSerializer
+
+    @action(methods=['GET'], detail=False, url_path='get/(?P<id>[^/]+)', url_name='Get member by vk_id', permission_classes=permission_classes)
+    def get_member(self, request, id, *args, **kwargs):
+        params = request.GET
+        member = poc.utils.verify(params)
+        if not member:
+            return Response({'info': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            member_obj = Member.objects.get(vk_id=id)
+        except Member.DoesNotExist:
+            return Response({"info": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response(self.serializer_class(instance=member_obj, context={"request": request}).data, status=status.HTTP_200_OK)
+
+    @action(methods=['GET'], detail=False, url_path='me', url_name='Get my member', permission_classes=permission_classes)
+    def get_me(self, request, *args, **kwargs):
+        params = request.GET
+        member = poc.utils.verify(params)
+        if not member:
+            return Response({'info': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        return Response(self.serializer_class(instance=member, context={"request": request}).data, status=status.HTTP_200_OK)
+
+
+class CheckView(viewsets.ViewSet):
+    """
+    Действия со счетами
+    """
+    permission_classes = (AllowAny, )
+    serializer_class = CheckSerializer
+
+    @action(methods=['GET'], detail=False, url_path='get/(?P<id>[^/]+)', url_name='Get check', permission_classes=permission_classes)
+    def get_check(self, request, id, *args, **kwargs):
+        params = request.GET
+        member = poc.utils.verify(params)
+        if not member:
+            return Response({'info': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            check = Check.objects.get(id=id)
+        except Check.DoesNotExist:
+            return Response({"info": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response(self.serializer_class(instance=check, context={"request": request}).data, status=status.HTTP_200_OK)
+
+    @action(methods=['POST'], detail=False, url_path='new', url_name='New check', permission_classes=permission_classes)
+    def new_check(self, request, *args, **kwargs):
+        data = request.data
+        params = request.GET
+        member = poc.utils.verify(params)
+        if not member:
+            return Response({'info': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        
+        serialializer = CheckSerializer(data=data, context={'member': member})
+        serialializer.is_valid(raise_exception=True)
+        check = serialializer.save()
+        return Response(self.serializer_class(instance=check, context={"request": request}).data, status=status.HTTP_201_CREATED)
+
+    @action(methods=['POST'], detail=False, url_path='close', url_name='Close check', permission_classes=permission_classes)
+    def close_check(self, request, *args, **kwargs):
+        data = request.data
+        params = request.GET
+        member = poc.utils.verify(params)
+        if not member:
+            return Response({'info': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            check = Check.objects.get(id=data.get('id'))
+        except Check.DoesNotExist:
+            return Response({"info": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        serialializer = CheckSerializer(instance=check, context={'member': member})
+        check = serialializer.close(check)
+        return Response(self.serializer_class(instance=check, context={"request": request}).data, status=status.HTTP_200_OK)
