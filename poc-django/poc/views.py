@@ -76,8 +76,6 @@ class MemberView(viewsets.ViewSet):
     def get_member(self, request, id, *args, **kwargs):
         params = request.GET
         member = poc.utils.verify(params)
-        if not member:
-            return Response({'info': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
         try:
             member_obj = Member.objects.get(vk_id=id)
@@ -89,8 +87,7 @@ class MemberView(viewsets.ViewSet):
     def get_me(self, request, *args, **kwargs):
         params = request.GET
         member = poc.utils.verify(params)
-        if not member:
-            return Response({'info': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
         return Response(self.serializer_class(instance=member, context={"request": request}).data, status=status.HTTP_200_OK)
 
 
@@ -105,8 +102,6 @@ class CheckView(viewsets.ViewSet):
     def get_check(self, request, id, *args, **kwargs):
         params = request.GET
         member = poc.utils.verify(params)
-        if not member:
-            return Response({'info': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
         try:
             check = Check.objects.get(id=id)
@@ -119,8 +114,6 @@ class CheckView(viewsets.ViewSet):
         data = request.data
         params = request.GET
         member = poc.utils.verify(params)
-        if not member:
-            return Response({'info': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
         
         serialializer = CheckSerializer(data=data, context={'member': member})
         serialializer.is_valid(raise_exception=True)
@@ -132,8 +125,6 @@ class CheckView(viewsets.ViewSet):
         data = request.data
         params = request.GET
         member = poc.utils.verify(params)
-        if not member:
-            return Response({'info': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
         
         try:
             check = Check.objects.get(id=data.get('id'))

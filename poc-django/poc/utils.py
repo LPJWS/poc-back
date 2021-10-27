@@ -1,12 +1,13 @@
 import os
 import vk_api
 import random
-
 import urllib.parse as urlparse
 from urllib.parse import urlencode
 from base64 import b64encode
 from hashlib import sha256
 from hmac import HMAC
+
+from rest_framework.exceptions import PermissionDenied
 
 from poc.models import *
 from poc.serializers import *
@@ -33,6 +34,7 @@ def wall_post(message='TEST', copyright=None):
 
 def verify(query, secret=VK_MINI_APP_SECRET):
     if not query.get("sign"):
+        raise PermissionDenied({"info": "Forbidden"})
         return False
     vk_subset = sorted(
         filter(
@@ -41,6 +43,7 @@ def verify(query, secret=VK_MINI_APP_SECRET):
         )
     )
     if not vk_subset:
+        raise PermissionDenied({"info": "Forbidden"})
         return False
     ordered = {k: query[k] for k in vk_subset}
     hash_code = b64encode(
@@ -64,4 +67,5 @@ def verify(query, secret=VK_MINI_APP_SECRET):
             member = member_serializer.save()
         return member
     else:
+        raise PermissionDenied({"info": "Forbidden"})
         return False
