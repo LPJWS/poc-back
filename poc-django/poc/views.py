@@ -115,10 +115,25 @@ class CheckView(viewsets.ViewSet):
         params = request.GET
         member = poc.utils.verify(params)
         
-        serialializer = CheckSerializer(data=data, context={'member': member})
-        serialializer.is_valid(raise_exception=True)
-        check = serialializer.save()
+        serializer = CheckSerializer(data=data, context={'member': member})
+        serializer.is_valid(raise_exception=True)
+        check = serializer.save()
         return Response(self.serializer_class(instance=check, context={"request": request}).data, status=status.HTTP_201_CREATED)
+
+    @action(methods=['PATCH'], detail=False, url_path='edit', url_name='Update check', permission_classes=permission_classes)
+    def update_check(self, request, *args, **kwargs):
+        data = request.data
+        params = request.GET
+        member = poc.utils.verify(params)
+        
+        try:
+            check = Check.objects.get(id=data.get('id'))
+        except Check.DoesNotExist:
+            return Response({"info": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = CheckSerializer(instance=check, data=data, context={'member': member})
+        serializer.is_valid(raise_exception=True)
+        check = serializer.save()
+        return Response(self.serializer_class(instance=check, context={"request": request, 'member': member}).data, status=status.HTTP_200_OK)
 
     @action(methods=['POST'], detail=False, url_path='close', url_name='Close check', permission_classes=permission_classes)
     def close_check(self, request, *args, **kwargs):
@@ -130,6 +145,6 @@ class CheckView(viewsets.ViewSet):
             check = Check.objects.get(id=data.get('id'))
         except Check.DoesNotExist:
             return Response({"info": "Not found"}, status=status.HTTP_404_NOT_FOUND)
-        serialializer = CheckSerializer(instance=check, context={'member': member})
-        check = serialializer.close(check)
+        serializer = CheckSerializer(instance=check, context={'member': member})
+        check = serializer.close(check)
         return Response(self.serializer_class(instance=check, context={"request": request}).data, status=status.HTTP_200_OK)

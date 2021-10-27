@@ -6,7 +6,7 @@ from django.core.validators import ProhibitNullCharactersValidator
 from django.db.models import fields
 import requests
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, PermissionDenied
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.fields import FileField, SkipField, ImageField
 from rest_framework.relations import PKOnlyObject
@@ -158,10 +158,24 @@ class CheckSerializer(BaseImageSerializer):
         check.save()
         return check
 
+    def update(self, instance: Check, validated_data):
+        member = self.context.get('member')
+        if instance.organizer != member:
+            raise PermissionDenied({"info": "You can't edit this check"})
+        if not instance.active:
+            raise ValidationError({"info": "Check closed"})
+
+        title = validated_data.get('title')
+
+        instance.title = title if title else instance.title
+
+        instance.save()
+        return instance
+
     def close(self, instance: Check):
         member = self.context.get('member')
         if member != instance.organizer:
-            raise ValidationError({"info": "You can't close this check"})
+            raise PermissionDenied({"info": "You can't close this check"})
         if instance.active or not instance.closed_at:
             instance.active = False
             instance.closed_at = timezone.now()
