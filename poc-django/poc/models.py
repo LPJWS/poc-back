@@ -124,3 +124,23 @@ class CheckRecord(models.Model):
     class Meta:
         verbose_name = 'Трата по счету'
         verbose_name_plural = 'Траты по счетам'
+
+
+class Debt(models.Model):
+    """
+    [Debt]
+    Модель долгов
+    """
+    from_member = models.ForeignKey(Member, on_delete=CASCADE, null=True, related_name='from_user', verbose_name="Должник")
+    to_user = models.ForeignKey(Member, on_delete=CASCADE, null=True, related_name='to_user', verbose_name="Получатель")
+    check_obj = models.ForeignKey(Check, on_delete=CASCADE, null=True, verbose_name="Счет")
+    amount = models.FloatField(default=0.0, verbose_name="Сумма")
+    is_sended = models.BooleanField(default=False, verbose_name="Перевод осуществлен?")
+    is_confirmed = models.BooleanField(default=False, verbose_name="Перевод получен?")
+
+    def __str__(self) -> str:
+        return f"{self.from_user} ==({self.amount}==> {self.to_user} (Счет: {self.check_obj})"
+
+    class Meta:
+        verbose_name = 'Долг'
+        verbose_name_plural = 'Долги'
