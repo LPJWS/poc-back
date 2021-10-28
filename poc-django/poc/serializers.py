@@ -3,7 +3,7 @@ from collections import OrderedDict
 from django import utils
 
 from django.core.validators import ProhibitNullCharactersValidator
-from django.db.models import fields
+from django.db.models import fields, Sum
 import requests
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError, PermissionDenied
@@ -148,6 +148,21 @@ class CheckSerializer(BaseImageSerializer):
     Сериализатор для счетов
     """
     organizer = MemberSerializer(read_only=True)
+    records = serializers.SerializerMethodField()
+    members = serializers.SerializerMethodField()
+    total_amount = serializers.SerializerMethodField()
+
+    def get_members(self, object):
+        members_ = Member.objects.filter(checkmember__in=CheckMember.objects.filter(check_obj=object))
+        return MemberSerializer(instance=members_, many=True, context=self.context).data
+
+    def get_records(self, object):
+        records_ = CheckRecord.objects.filter(check_obj=object)
+        return CheckRecordListSerializer(instance=records_, many=True, context=self.context).data
+
+    def get_total_amount(self, object):
+        total_amount_ = CheckRecord.objects.filter(check_obj=object).aggregate(Sum('amount'))['amount__sum']
+        return total_amount_ if total_amount_ else 0.0
 
     def create(self, validated_data):
         member = self.context.get('member')
@@ -156,6 +171,8 @@ class CheckSerializer(BaseImageSerializer):
             organizer=member
         )
         check.save()
+        check_member = CheckMember.objects.create(check_obj=check, member=member)
+        check_member.save()
         return check
 
     def update(self, instance: Check, validated_data):
@@ -184,4 +201,92 @@ class CheckSerializer(BaseImageSerializer):
 
     class Meta:
         model = Check
+        fields = '__all__'
+
+
+class CheckListSerializer(BaseImageSerializer):
+    """
+    Сериализатор для счетов
+    """
+
+    class Meta:
+        model = Check
+        fields = '__all__'
+
+
+class CheckRecordSerializer(BaseImageSerializer):
+    """
+    Сериализатор для записей счетов
+    """
+
+    def create(self, validated_data):
+        member = self.context.get('member')
+        check_obj = validated_data.get('check_obj')
+        check_member = CheckMember.objects.filter(member=member, check_obj=check_obj)
+        if not check_obj.active:
+            raise ValidationError({"info": "Check closed"})
+        if not check_member:
+            raise PermissionDenied({"info": "Forbidden"})
+
+        check_record = CheckRecord.objects.create(
+            object=validated_data.get('object'),
+            member=member,
+            check_obj=validated_data.get('check_obj'),
+            desc=validated_data.get('desc'),
+            amount=validated_data.get('amount')
+        )
+        check_record.save()
+        return check_record
+
+    def update(self, instance: CheckRecord, validated_data):
+        member = self.context.get('member')
+        if instance.member != member and instance.check_obj.organizer != member:
+            raise PermissionDenied({"info": "You can't edit this check record"})
+        if not instance.check_obj.active:
+            raise ValidationError({"info": "Check closed"})
+
+        object = validated_data.get('object')
+        desc = validated_data.get('desc')
+        amount = validated_data.get('amount')
+
+        instance.object = object if object else instance.object
+        instance.desc = desc if desc else instance.desc
+        instance.amount = amount if amount else instance.amount
+
+        instance.save()
+        return instance
+
+    def remove(self, instance: CheckRecord):
+        member = self.context.get('member')
+        if instance.member != member and instance.check_obj.organizer != member:
+            raise PermissionDenied({"info": "You can't delete this record"})
+        if not instance.check_obj.active:
+            raise ValidationError({"info": "Check closed"})
+        instance.delete()
+
+    class Meta:
+        model = CheckRecord
+        fields = '__all__'
+
+
+class CheckRecordDetailSerializer(BaseImageSerializer):
+    """
+    Сериализатор для детального отображения записей счетов
+    """
+    member = MemberSerializer()
+    check_obj = CheckListSerializer()
+
+    class Meta:
+        model = CheckRecord
+        fields = '__all__'
+
+
+class CheckRecordListSerializer(BaseImageSerializer):
+    """
+    Сериализатор для листингового отображения записей счетов
+    """
+    member = MemberSerializer()
+
+    class Meta:
+        model = CheckRecord
         fields = '__all__'

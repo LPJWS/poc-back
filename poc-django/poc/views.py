@@ -133,7 +133,7 @@ class CheckView(viewsets.ViewSet):
         serializer = CheckSerializer(instance=check, data=data, context={'member': member})
         serializer.is_valid(raise_exception=True)
         check = serializer.save()
-        return Response(self.serializer_class(instance=check, context={"request": request, 'member': member}).data, status=status.HTTP_200_OK)
+        return Response(self.serializer_class(instance=check, context={"request": request}).data, status=status.HTTP_200_OK)
 
     @action(methods=['POST'], detail=False, url_path='close', url_name='Close check', permission_classes=permission_classes)
     def close_check(self, request, *args, **kwargs):
@@ -148,3 +148,62 @@ class CheckView(viewsets.ViewSet):
         serializer = CheckSerializer(instance=check, context={'member': member})
         check = serializer.close(check)
         return Response(self.serializer_class(instance=check, context={"request": request}).data, status=status.HTTP_200_OK)
+
+
+class CheckRecordView(viewsets.ViewSet):
+    """
+    Действия с записями счетов
+    """
+    permission_classes = (AllowAny, )
+    serializer_class = CheckRecordDetailSerializer
+
+    @action(methods=['GET'], detail=False, url_path='get/(?P<id>[^/]+)', url_name='Get check record', permission_classes=permission_classes)
+    def get_check_record(self, request, id, *args, **kwargs):
+        params = request.GET
+        member = poc.utils.verify(params)
+
+        try:
+            check_record = CheckRecord.objects.get(id=id)
+        except CheckRecord.DoesNotExist:
+            return Response({"info": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response(self.serializer_class(instance=check_record, context={"request": request}).data, status=status.HTTP_200_OK)
+
+    @action(methods=['POST'], detail=False, url_path='new', url_name='New check record', permission_classes=permission_classes)
+    def new_check_record(self, request, *args, **kwargs):
+        data = request.data
+        params = request.GET
+        member = poc.utils.verify(params)
+        
+        serializer = CheckRecordSerializer(data=data, context={'member': member})
+        serializer.is_valid(raise_exception=True)
+        check_record = serializer.save()
+        return Response(self.serializer_class(instance=check_record, context={"request": request}).data, status=status.HTTP_201_CREATED)
+
+    @action(methods=['PATCH'], detail=False, url_path='edit', url_name='Update check record', permission_classes=permission_classes)
+    def update_check_record(self, request, *args, **kwargs):
+        data = request.data
+        params = request.GET
+        member = poc.utils.verify(params)
+        
+        try:
+            check_record = CheckRecord.objects.get(id=data.get('id'))
+        except CheckRecord.DoesNotExist:
+            return Response({"info": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = CheckRecordSerializer(instance=check_record, data=data, context={'member': member})
+        serializer.is_valid(raise_exception=True)
+        check_record = serializer.save()
+        return Response(self.serializer_class(instance=check_record, context={"request": request}).data, status=status.HTTP_200_OK)
+
+    @action(methods=['DELETE'], detail=False, url_path='delete', url_name='Delete check record', permission_classes=permission_classes)
+    def delete_check_record(self, request, *args, **kwargs):
+        data = request.data
+        params = request.GET
+        member = poc.utils.verify(params)
+        
+        try:
+            check_record = CheckRecord.objects.get(id=data.get('id'))
+        except CheckRecord.DoesNotExist:
+            return Response({"info": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = CheckRecordSerializer(instance=check_record, context={'member': member})
+        serializer.remove(check_record)
+        return Response({"info": "ok"}, status=status.HTTP_200_OK)
