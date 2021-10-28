@@ -199,6 +199,27 @@ class CheckSerializer(BaseImageSerializer):
             instance.save()
         return instance
 
+    def join(self, instance: Check):
+        member = self.context.get('member')
+        
+        check_member, created = CheckMember.objects.get_or_create(member=member, check_obj=instance)
+        if created:
+            check_member.save()
+
+        return instance
+
+    def leave(self, instance: Check):
+        member = self.context.get('member')
+        
+        try:
+            check_member = CheckMember.objects.get(member=member, check_obj=instance)
+        except CheckMember.DoesNotExist:
+            raise ValidationError({"info": "You are not a member of this check"})
+        if instance.organizer == member:
+            raise ValidationError({"info": "You can't leave this check (you are organizer)"})
+
+        check_member.delete()
+
     class Meta:
         model = Check
         fields = '__all__'

@@ -149,6 +149,34 @@ class CheckView(viewsets.ViewSet):
         check = serializer.close(check)
         return Response(self.serializer_class(instance=check, context={"request": request}).data, status=status.HTTP_200_OK)
 
+    @action(methods=['POST'], detail=False, url_path='join', url_name='Join check', permission_classes=permission_classes)
+    def join_check(self, request, *args, **kwargs):
+        data = request.data
+        params = request.GET
+        member = poc.utils.verify(params)
+        
+        try:
+            check = Check.objects.get(id=data.get('id'))
+        except Check.DoesNotExist:
+            return Response({"info": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = CheckSerializer(instance=check, context={'member': member})
+        serializer.join(check)
+        return Response(self.serializer_class(instance=check, context={"request": request}).data, status=status.HTTP_200_OK)
+
+    @action(methods=['POST'], detail=False, url_path='leave', url_name='Leave check', permission_classes=permission_classes)
+    def leave_check(self, request, *args, **kwargs):
+        data = request.data
+        params = request.GET
+        member = poc.utils.verify(params)
+        
+        try:
+            check = Check.objects.get(id=data.get('id'))
+        except Check.DoesNotExist:
+            return Response({"info": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = CheckSerializer(instance=check, context={'member': member})
+        serializer.leave(check)
+        return Response({"info": "ok"}, status=status.HTTP_200_OK)
+
 
 class CheckRecordView(viewsets.ViewSet):
     """
