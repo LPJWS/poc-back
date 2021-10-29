@@ -122,7 +122,7 @@ class UserUpdateSerializer(BaseImageSerializer):
 
 class MemberSerializer(BaseImageSerializer):
     """
-    Сериализатор для детального отображения пользователя
+    Сериализатор для общего отображения пользователя
     """
 
     def create(self, validated_data):
@@ -143,6 +143,21 @@ class MemberSerializer(BaseImageSerializer):
         fields = '__all__'
 
 
+class MemberDetailSerializer(BaseImageSerializer):
+    """
+    Сериализатор для детального пользователя
+    """
+    debts = serializers.SerializerMethodField()
+
+    def get_debts(self, object):
+        member_debts = Debt.objects.filter(from_member=object, is_confirmed=False)
+        return DebtSerializer(instance=member_debts, many=True).data
+
+    class Meta:
+        model = Member
+        fields = '__all__'
+
+
 class CheckSerializer(BaseImageSerializer):
     """
     Сериализатор для счетов
@@ -151,7 +166,7 @@ class CheckSerializer(BaseImageSerializer):
     records = serializers.SerializerMethodField()
     members = serializers.SerializerMethodField()
     total_amount = serializers.SerializerMethodField()
-    # debts = serializers.SerializerMethodField()
+    debts = serializers.SerializerMethodField()
 
     def get_members(self, object):
         members_ = Member.objects.filter(checkmember__in=CheckMember.objects.filter(check_obj=object))
@@ -165,27 +180,9 @@ class CheckSerializer(BaseImageSerializer):
         total_amount_ = CheckRecord.objects.filter(check_obj=object).aggregate(Sum('amount'))['amount__sum']
         return total_amount_ if total_amount_ else 0.0
 
-    # def get_debts(self, object):
-    #     records_ = CheckRecord.objects.filter(check_obj=object)
-    #     members_ = Member.objects.filter(checkmember__in=CheckMember.objects.filter(check_obj=object))
-    #     count = len(members_)
-    #     res = []
-    #     total = {member: 0.0 for member in members_}
-
-    #     for record in records_:
-    #         total[record.member] += record.amount
-
-    #     for i in total.keys():
-    #         total[i] /= count
-
-    #     for member in members_:
-    #         for member_ in members_:
-    #             if member == member_:
-    #                 continue
-    #             if total[member] < total[member_]:
-    #                 res.append({'from': MemberSerializer(member).data, 'to': MemberSerializer(member_).data, 'amount': total[member_] - total[member]})
-
-    #     return res
+    def get_debts(self, object):
+        check_debts = Debt.objects.filter(check_obj=object)
+        return DebtSerializer(instance=check_debts, many=True, context=self.context).data
         
 
     def create(self, validated_data):
@@ -357,4 +354,16 @@ class CheckRecordListSerializer(BaseImageSerializer):
 
     class Meta:
         model = CheckRecord
+        fields = '__all__'
+
+
+class DebtSerializer(BaseImageSerializer):
+    """
+    Сериализатор для долгов
+    """
+    from_member = MemberSerializer()
+    to_member = MemberSerializer()
+
+    class Meta:
+        model = Debt
         fields = '__all__'

@@ -88,7 +88,7 @@ class MemberView(viewsets.ViewSet):
         params = request.GET
         member = poc.utils.verify(params)
 
-        return Response(self.serializer_class(instance=member, context={"request": request}).data, status=status.HTTP_200_OK)
+        return Response(MemberDetailSerializer(instance=member, context={"request": request}).data, status=status.HTTP_200_OK)
 
 
 class CheckView(viewsets.ViewSet):
