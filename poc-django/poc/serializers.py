@@ -155,7 +155,7 @@ class MemberDetailSerializer(BaseImageSerializer):
         return DebtSerializer(instance=member_debts, many=True).data
 
     def get_checks(self, object):
-        member_checks = Check.objects.filter(checkmember__in=CheckMember.objects.filter(member=object))
+        member_checks = Check.objects.filter(checkmember__in=CheckMember.objects.filter(member=object), active=True)
         return CheckListSerializer(instance=member_checks, many=True).data
 
     class Meta:
