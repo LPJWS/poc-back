@@ -272,6 +272,9 @@ class CheckSerializer(BaseImageSerializer):
         if instance.organizer == member:
             raise ValidationError({"info": "You can't leave this check (you are organizer)"})
 
+        check_records = CheckRecord.objects.filter(member=member, check_oj=instance)
+        
+        check_records.delete()
         check_member.delete()
 
     class Meta:
