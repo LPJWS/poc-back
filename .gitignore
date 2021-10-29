@@ -58,3 +58,5 @@ poc-django/celerybeat-schedule
 
 .env
 .env.prod
+
+data/certbot
