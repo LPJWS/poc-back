@@ -373,6 +373,7 @@ class DebtSerializer(BaseImageSerializer):
     """
     from_member = MemberSerializer()
     to_member = MemberSerializer()
+    check_obj = CheckListSerializer()
 
     class Meta:
         model = Debt
