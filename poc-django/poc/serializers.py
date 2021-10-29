@@ -148,10 +148,15 @@ class MemberDetailSerializer(BaseImageSerializer):
     Сериализатор для детального пользователя
     """
     debts = serializers.SerializerMethodField()
+    checks = serializers.SerializerMethodField()
 
     def get_debts(self, object):
         member_debts = Debt.objects.filter(from_member=object, is_confirmed=False)
         return DebtSerializer(instance=member_debts, many=True).data
+
+    def get_checks(self, object):
+        member_checks = Check.objects.filter(checkmember__in=CheckMember.objects.filter(member=object))
+        return CheckListSerializer(instance=member_checks, many=True).data
 
     class Meta:
         model = Member
@@ -273,6 +278,11 @@ class CheckListSerializer(BaseImageSerializer):
     """
     Сериализатор для счетов
     """
+    total_amount = serializers.SerializerMethodField()
+
+    def get_total_amount(self, object):
+        total_amount_ = CheckRecord.objects.filter(check_obj=object).aggregate(Sum('amount'))['amount__sum']
+        return total_amount_ if total_amount_ else 0.0
 
     class Meta:
         model = Check
