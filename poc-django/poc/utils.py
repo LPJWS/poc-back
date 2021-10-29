@@ -10,7 +10,6 @@ from hmac import HMAC
 from rest_framework.exceptions import PermissionDenied
 
 from poc.models import *
-from poc.serializers import *
 
 VK_SERVICE = os.environ.get('VK_SERVICE')
 VK_OAUTH = os.environ.get('VK_OAUTH')
@@ -62,10 +61,13 @@ def verify(query, secret=VK_MINI_APP_SECRET):
         try:
             member = Member.objects.get(vk_id=vk_user_id)
         except Member.DoesNotExist:
-            member_serializer = MemberSerializer(data={"vk_id": vk_user_id})
-            member_serializer.is_valid(raise_exception=True)
-            member = member_serializer.save()
+            member = Member.objects.create(vk_id=vk_user_id)
+            vk_user_object = get_name_by_id(vk_user_id)
+            name = f"{vk_user_object['first_name']} {vk_user_object['last_name']}"
+            photo = vk_user_object['photo_200']
+            member.name = name
+            member.photo = photo
+            member.save()
         return member
     else:
         raise PermissionDenied({"info": "Forbidden"})
-        return False
