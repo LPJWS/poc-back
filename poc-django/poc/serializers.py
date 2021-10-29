@@ -148,11 +148,16 @@ class MemberDetailSerializer(BaseImageSerializer):
     Сериализатор для детального пользователя
     """
     debts = serializers.SerializerMethodField()
+    debtors = serializers.SerializerMethodField()
     checks = serializers.SerializerMethodField()
 
     def get_debts(self, object):
         member_debts = Debt.objects.filter(from_member=object, is_confirmed=False)
         return DebtSerializer(instance=member_debts, many=True).data
+
+    def get_debtors(self, object):
+        member_debtors = Debt.objects.filter(to_member=object, is_confirmed=False)
+        return DebtSerializer(instance=member_debtors, many=True).data
 
     def get_checks(self, object):
         member_checks = Check.objects.filter(checkmember__in=CheckMember.objects.filter(member=object), active=True)
