@@ -222,7 +222,7 @@ class CheckRecordView(viewsets.ViewSet):
         check_record = serializer.save()
         return Response(self.serializer_class(instance=check_record, context={"request": request}).data, status=status.HTTP_200_OK)
 
-    @action(methods=['DELETE'], detail=False, url_path='delete', url_name='Delete check record', permission_classes=permission_classes)
+    @action(methods=['POST'], detail=False, url_path='delete', url_name='Delete check record', permission_classes=permission_classes)
     def delete_check_record(self, request, *args, **kwargs):
         data = request.data
         params = request.GET
