@@ -235,3 +235,32 @@ class CheckRecordView(viewsets.ViewSet):
         serializer = CheckRecordSerializer(instance=check_record, context={'member': member})
         serializer.remove(check_record)
         return Response({"info": "ok"}, status=status.HTTP_200_OK)
+
+
+class DebtView(viewsets.ViewSet):
+    """
+    Действия с долгами
+    """
+    permission_classes = (AllowAny, )
+
+    @action(methods=['POST'], detail=False, url_path='send', url_name='Send payment', permission_classes=permission_classes)
+    def send(self, request, *args, **kwargs):
+        data = request.data
+        params = request.GET
+        member = poc.utils.verify(params)
+        
+        debt = Debt.objects.get(id=data.get('id'))
+        serializer = DebtSerializer(instance=debt, context={'member': member})
+        serializer.send()
+        return Response(MemberDetailSerializer(instance=member, context={"request": request}).data, status=status.HTTP_200_OK)
+
+    @action(methods=['POST'], detail=False, url_path='confirm', url_name='Confirm payment', permission_classes=permission_classes)
+    def confirm(self, request, *args, **kwargs):
+        data = request.data
+        params = request.GET
+        member = poc.utils.verify(params)
+        
+        debt = Debt.objects.get(id=data.get('id'))
+        serializer = DebtSerializer(instance=debt, context={'member': member})
+        serializer.confirm()
+        return Response(MemberDetailSerializer(instance=member, context={"request": request}).data, status=status.HTTP_200_OK)

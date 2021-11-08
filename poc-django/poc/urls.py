@@ -10,6 +10,7 @@ router.register(r'user', UserView, basename='user')
 router.register(r'member', MemberView, basename='member')
 router.register(r'check', CheckView, basename='check')
 router.register(r'record', CheckRecordView, basename='record')
+router.register(r'debt', DebtView, basename='debt')
 
 urlpatterns = [
     # path('auth/send/', reset_password),
