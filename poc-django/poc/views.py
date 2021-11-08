@@ -251,7 +251,7 @@ class DebtView(viewsets.ViewSet):
         
         debt = Debt.objects.get(id=data.get('id'))
         serializer = DebtSerializer(instance=debt, context={'member': member})
-        serializer.send()
+        serializer.send(instance=debt)
         return Response(MemberDetailSerializer(instance=member, context={"request": request}).data, status=status.HTTP_200_OK)
 
     @action(methods=['POST'], detail=False, url_path='confirm', url_name='Confirm payment', permission_classes=permission_classes)
@@ -262,5 +262,5 @@ class DebtView(viewsets.ViewSet):
         
         debt = Debt.objects.get(id=data.get('id'))
         serializer = DebtSerializer(instance=debt, context={'member': member})
-        serializer.confirm()
+        serializer.confirm(instance=debt)
         return Response(MemberDetailSerializer(instance=member, context={"request": request}).data, status=status.HTTP_200_OK)
