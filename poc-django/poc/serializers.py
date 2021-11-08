@@ -384,13 +384,13 @@ class DebtSerializer(BaseImageSerializer):
     check_obj = CheckListSerializer()
 
     def send(self, instance: Debt):
-        if instance.from_member != self.context.member:
+        if instance.from_member != self.context.get('member'):
             raise ValidationError({'info': 'You can\'t send this debt'})
         instance.is_sended = True
         instance.save()
 
     def confirm(self, instance: Debt):
-        if instance.to_member != self.context.member:
+        if instance.to_member != self.context.get('member'):
             raise ValidationError({'info': 'You can\'t confirm this debt'})
         if not instance.is_sended:
             raise ValidationError({'info': 'Debt has not sended yet'})
